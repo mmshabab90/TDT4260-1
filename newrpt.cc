@@ -121,3 +121,13 @@ void prefetch_complete(Addr addr) {
 }
 
 
+/*
+Function Description (things we can use):
+void issue prefetch(Addr addr)    Called by the prefetcher to initiate a prefetch
+int get prefetch bit(Addr addr)   Is the prefetch bit set for addr?
+int set prefetch bit(Addr addr)   Set the prefetch bit for addr
+int clear prefetch bit(Addr addr) Clear the prefetch bit for addr
+int in cache(Addr addr)           Is addr currently in the L2 cache?
+int in mshr queue(Addr addr)      Is there a prefetch request for addr in the MSHR (miss status holding register) queue?
+int current queue size(void)      Returns the number of queued prefetch requests
+*/
