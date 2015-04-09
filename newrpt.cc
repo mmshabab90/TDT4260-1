@@ -50,28 +50,35 @@ void RPTTable::push_front(RPTEntry * entry) {
 }
 
 /*
-* TODO: finish!
-*/
+ * Pops the last element (least recently used) from the queue)
+ */
+void RPTTable::pop(RPTEntry * entry) {
+	//TODO: write this
+
+}
+
+/*
+ * Inserts a new element at the front of the queue
+ */
 void RPTTable::append(Addr programCounter, Addr memoryAddress) {
 	RPTEntry * entry = new RPTEntry(programCounter, MemoryAddress);
-        entries[programCounter] = entry;
+        this.entries[programCounter] = entry;
 
 	if(entries.size() >= MAX_ENTRIES){
-		pop(tail);
+		pop(this.tail);
 		entry->next = this.head
-		this.head = entry;
 	}else if(entries.size()){ // if not empty
-		
+		entry->next = this.head
 	}else{// if empty
-		this.head = entry
 		this.tail = entry
 	}
+	this.head = entry;
 }
 
 RPTEntry * RPTTable::get(Addr programCounter) {
-	RPTEntry * entry = entries.find(programCounter);
+	RPTEntry * entry = this.entries.find(programCounter);
 
-	table.push_front(entry)
+	this.push_front(entry)
 	
 	return entry;
 }
@@ -80,14 +87,14 @@ RPTEntry * RPTTable::get(Addr programCounter) {
  * Updates last address on an RPTTable entry
  */
 void RPTTable::update(Addr programCounter, Addr memoryAddress){
-	entries.find(programCounter)->lastAddress = memoryAddress;
+	this.entries.find(programCounter)->lastAddress = memoryAddress;
 }
 
 /*
  * Adjusts the delta on an RPTTable entry
  */
 void RPTTable::adjustDelta(Addr programCounter, Addr memoryAdress){
-	RPTEntry * entry = entries.find(programCounter);
+	RPTEntry * entry = this.entries.find(programCounter);
         entry->delta = memoryAddress - entry->lastAddress;
 }
 
