@@ -25,7 +25,7 @@ class RPTTable {
 		void adjustDelta(Addr programCounter);
 	private:
 		void push_front(RPTEntry *);
-		void pop(RPTEntry *);
+		void pop(void);
 		int currentEntries;
 		RPTEntry * head, * tail;
 		std::map<Addr, RPTEntry *> entries;
@@ -52,9 +52,11 @@ void RPTTable::push_front(RPTEntry * entry) {
 /*
  * Pops the last element (least recently used) from the queue)
  */
-void RPTTable::pop(RPTEntry * entry) {
-	//TODO: write this
-
+void RPTTable::pop(void) {
+	RPTEntry * last = this.tail;
+	this.tail = last->prev;
+	this.entries.erase(last.programCounter);
+	delete last;
 }
 
 /*
