@@ -132,7 +132,7 @@ void prefetch_access(AccessStat stat) {
 		table->adjustDelta(stat.pc, stat.mem_addr);
 	}
 	table->update(stat.pc, stat.mem_addr);
-	issue_prefetch( entry->lastAddress );
+	issue_prefetch( entry->lastAddress + entry->delta);
 }
 
 /*
