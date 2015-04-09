@@ -3,6 +3,7 @@
 
 struct RPTEntry {
 		RPTEntry(Addr pc);
+		RPTEntry(Addr pc, Addr la);
 
 		Addr programCounter;
 		Addr lastAddress;
@@ -20,9 +21,9 @@ class RPTTable {
 
 		RPTTable();
 		RPTEntry * get(Addr programCounter);
-		void append(Addr programCounter);
-		void update(Addr programCounter);
-		void adjustDelta(Addr programCounter);
+		void append(Addr programCounter, Addr memoryAddress);
+		void update(Addr programCounter, Addr memoryAddress);
+		void adjustDelta(Addr programCounter, Addr memoryAddress);
 	private:
 		void push_front(RPTEntry *);
 		void pop(void);
@@ -40,22 +41,22 @@ void RPTTable::push_front(RPTEntry * entry) {
 	if(entry->prev == NULL){ // Entry is already head
                 return;
         }else if(entry->next == NULL){ // Entry is tail
-                this.tail = entry->prev;
-                entry->next = this.head;
+                this->tail = entry->prev;
+                entry->next = this->head;
         }else{
                 entry->next->prev = entry->prev;
                 entry->prev->next = entry->next;
         }
-        this.head = entry;
+        this->head = entry;
 }
 
 /*
  * Pops the last element (least recently used) from the queue)
  */
 void RPTTable::pop(void) {
-	RPTEntry * last = this.tail;
-	this.tail = last->prev;
-	this.entries.erase(last.programCounter);
+	RPTEntry * last = this->tail;
+	this->tail = last->prev;
+	this->entries.erase(last->programCounter);
 	delete last;
 }
 
@@ -63,43 +64,48 @@ void RPTTable::pop(void) {
  * Inserts a new element at the front of the queue
  */
 void RPTTable::append(Addr programCounter, Addr memoryAddress) {
-	RPTEntry * entry = new RPTEntry(programCounter, MemoryAddress);
-        this.entries[programCounter] = entry;
+	RPTEntry * entry = new RPTEntry(programCounter, memoryAddress);
+        this->entries[programCounter] = entry;
 
 	if(entries.size() >= MAX_ENTRIES){
-		pop(this.tail);
-		entry->next = this.head
+		this->pop();
+		entry->next = this->head;
 	}else if(entries.size()){ // if not empty
-		entry->next = this.head
+		entry->next = this->head;
 	}else{// if empty
-		this.tail = entry
+		this->tail = entry;
 	}
-	this.head = entry;
+	this->head = entry;
 }
 
 /*
  * Gets the RPTTable entry corresponding to the instruction in the programCounter
  */
 RPTEntry * RPTTable::get(Addr programCounter) {
-	RPTEntry * entry = this.entries.find(programCounter);
-
-	this.push_front(entry)
-	
-	return entry;
+	// Check if entry exists in map
+	if(this->entries.find(programCounter) == this->entries.end()){
+		//this->append(programCounter);
+		return NULL;
+	}else{
+		RPTEntry * entry = entries[programCounter];
+		this->push_front(entry);
+		return entry;
+	}
+	return entries[programCounter];
 }
 
 /*
  * Updates last address on an RPTTable entry
  */
 void RPTTable::update(Addr programCounter, Addr memoryAddress){
-	this.entries.find(programCounter)->lastAddress = memoryAddress;
+	this->entries[programCounter]->lastAddress = memoryAddress;
 }
 
 /*
  * Adjusts the delta on an RPTTable entry
  */
-void RPTTable::adjustDelta(Addr programCounter, Addr memoryAdress){
-	RPTEntry * entry = this.entries.find(programCounter);
+void RPTTable::adjustDelta(Addr programCounter, Addr memoryAddress){
+	RPTEntry * entry = this->entries[programCounter];
         entry->delta = memoryAddress - entry->lastAddress;
 }
 
@@ -118,11 +124,15 @@ void prefetch_init(void) {
  * a cache access (both hits and misses).
  */
 void prefetch_access(AccessStat stat) {
-	if(stat.miss) {
-		table->adjustDelta(stat.pc)
+	RPTEntry * entry = table->get(stat.pc);
+	if (entry == NULL){
+		table->append(stat.pc, stat.mem_addr);
 	}
-	table->update(stat.pc)
-	issue_pefetch( table->get(stat.pc).lastAddress )
+	if(stat.miss) {
+		table->adjustDelta(stat.pc, stat.mem_addr);
+	}
+	table->update(stat.pc, stat.mem_addr);
+	issue_prefetch( entry->lastAddress );
 }
 
 /*
