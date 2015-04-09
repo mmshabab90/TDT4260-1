@@ -56,7 +56,7 @@ void RPTTable::push_front(RPTEntry * entry) {
 void RPTTable::pop(void) {
 	RPTEntry * last = this->tail;
 	this->tail = last->prev;
-	this->entries.erase(last->programCounter);
+	this->entries.erase( this->entries.find(last->programCounter) );
 	delete last;
 }
 
@@ -67,8 +67,8 @@ void RPTTable::append(Addr programCounter, Addr memoryAddress) {
 	RPTEntry * entry = new RPTEntry(programCounter, memoryAddress);
         this->entries[programCounter] = entry;
 
-	if(entries.size() >= MAX_ENTRIES){
-		this->pop();
+	if(entries.size() >= this->MAX_ENTRIES){
+		//this->pop();
 		entry->next = this->head;
 	}else if(entries.size()){ // if not empty
 		entry->next = this->head;
@@ -91,7 +91,7 @@ RPTEntry * RPTTable::get(Addr programCounter) {
 		this->push_front(entry);
 		return entry;
 	}
-	return entries[programCounter];
+	return NULL;
 }
 
 /*
