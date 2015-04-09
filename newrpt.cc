@@ -75,6 +75,9 @@ void RPTTable::append(Addr programCounter, Addr memoryAddress) {
 	this.head = entry;
 }
 
+/*
+ * Gets the RPTTable entry corresponding to the instruction in the programCounter
+ */
 RPTEntry * RPTTable::get(Addr programCounter) {
 	RPTEntry * entry = this.entries.find(programCounter);
 
@@ -117,7 +120,7 @@ void prefetch_access(AccessStat stat) {
 		table->adjustDelta(stat.pc)
 	}
 	table->update(stat.pc)
-	issue_pefetch(table->get(stat.pc).lastAddress)
+	issue_pefetch( table->get(stat.pc).lastAddress )
 }
 
 /*
