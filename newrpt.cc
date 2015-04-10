@@ -22,7 +22,7 @@ class RPTTable {
 		RPTTable();
 		RPTEntry * get(Addr programCounter);
 		void append(Addr programCounter, Addr memoryAddress);
-		void update(Addr programCounter, Addr memoryAddress);
+		void update(RPTEntry * entry, Addr memoryAddress);
 		void adjustDelta(Addr programCounter, Addr memoryAddress);
 	private:
 		void push_front(RPTEntry *);
@@ -54,10 +54,13 @@ void RPTTable::push_front(RPTEntry * entry) {
  * Pops the last element (least recently used) from the queue)
  */
 void RPTTable::pop(void) {
-	RPTEntry * last = this->tail;
-	this->tail = last->prev;
-	this->entries.erase( this->entries.find(last->programCounter) );
-	delete last;
+	if(this->tail != NULL){
+		RPTEntry * last = this->tail;
+		this->tail = last->prev;
+		this->entries.erase( this->entries.find(last->programCounter) );
+		delete last;
+		this->currentEntries--;
+	}
 }
 
 /*
@@ -67,8 +70,8 @@ void RPTTable::append(Addr programCounter, Addr memoryAddress) {
 	RPTEntry * entry = new RPTEntry(programCounter, memoryAddress);
         this->entries[programCounter] = entry;
 
-	if(entries.size() >= this->MAX_ENTRIES){
-		//this->pop();
+	if(entries.size() >= this->MAX_ENTRIES){ // if full
+		this->pop();
 		entry->next = this->head;
 	}else if(entries.size()){ // if not empty
 		entry->next = this->head;
@@ -76,6 +79,7 @@ void RPTTable::append(Addr programCounter, Addr memoryAddress) {
 		this->tail = entry;
 	}
 	this->head = entry;
+	this->currentEntries++;
 }
 
 /*
@@ -97,8 +101,8 @@ RPTEntry * RPTTable::get(Addr programCounter) {
 /*
  * Updates last address on an RPTTable entry
  */
-void RPTTable::update(Addr programCounter, Addr memoryAddress){
-	this->entries[programCounter]->lastAddress = memoryAddress;
+void RPTTable::update(RPTEntry * entry, Addr memoryAddress){
+	entry->lastAddress = memoryAddress;
 }
 
 /*
@@ -124,15 +128,22 @@ void prefetch_init(void) {
  * a cache access (both hits and misses).
  */
 void prefetch_access(AccessStat stat) {
+	stat.pc = stat.pc << 53;
+	stat.pc = stat.pc >> 55;
+	stat.mem_addr &= 0xFFFFFFFF;
 	RPTEntry * entry = table->get(stat.pc);
 	if (entry == NULL){
 		table->append(stat.pc, stat.mem_addr);
+		entry = table->get(stat.pc);
 	}
 	if(stat.miss) {
 		table->adjustDelta(stat.pc, stat.mem_addr);
 	}
-	table->update(stat.pc, stat.mem_addr);
-	issue_prefetch( entry->lastAddress + entry->delta);
+	table->update(entry, stat.mem_addr);
+	Addr pf_addr = entry->lastAddress + entry->delta;
+	if(pf_addr < 268435455){
+		issue_prefetch( pf_addr );
+	}
 }
 
 /*
